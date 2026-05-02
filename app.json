@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "linkUp-client",
+    "slug": "linkUp-client",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "linkupclient",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "edgeToEdgeEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
+      "package": "com.anonymous.linkUpclient"
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
