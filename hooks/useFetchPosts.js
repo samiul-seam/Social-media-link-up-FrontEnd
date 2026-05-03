@@ -6,26 +6,25 @@ const useFetchPosts = () => {
     const [isLoading, setIsLoading] = useState(false);
     const hasFetched = useRef(false)
 
-    useEffect(() => {
-        const fetchPosts = async () => {
-            if (hasFetched.current) return
-            hasFetched.current = true
-            setIsLoading(true);
-
-            try {
-                const res = await authApiClient.get(`/posts`);
-                const data = res.data;
-                setPosts(data)
-            } catch {
-                console.log("something went wrong")
-            } finally {
-                setIsLoading(false)
-            }
+    const fetchPosts = async () => {
+        setIsLoading(true);
+        try {
+            const res = await authApiClient.get(`/posts`);
+            setPosts(res.data)
+        } catch {
+            console.log("something went wrong")
+        } finally {
+            setIsLoading(false)
         }
+    }
+
+    useEffect(() => {
+        if (hasFetched.current) return
+        hasFetched.current = true
         fetchPosts();
     }, [])
 
-    return { posts, isLoading }
+    return { posts, isLoading, fetchPosts } 
 }
 
 export default useFetchPosts

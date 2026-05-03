@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import authApiClient from "../../services/auth-api-client";
 import PersonCard from "./PersonalCard";
@@ -163,16 +163,41 @@ const SearchPage = () => {
 
 const SuggestedPeople = () => {
     const [suggested, setSuggested] = useState([])
+    const [refreshing, setRefreshing] = useState(false)
+
+    const fetchSuggested = async () => {
+        try {
+            const res = await authApiClient.get('/users/')
+            setSuggested(res.data.slice(0, 5))
+        } catch {}
+    }
 
     useEffect(() => {
-        authApiClient.get('/users/')
-            .then(res => setSuggested(res.data.slice(0, 5)))
-            .catch(() => {})
+        fetchSuggested()
     }, [])
 
-    return suggested.map(item => (
-        <PersonCard key={`suggested-${item.id}`} item={item} />
-    ))
+    const onRefresh = async () => {
+        setRefreshing(true)
+        await fetchSuggested()
+        setRefreshing(false)
+    }
+
+    return (
+        <FlatList
+            data={suggested}
+            keyExtractor={(item) => `suggested-${item.id}`}
+            renderItem={({ item }) => <PersonCard key={`suggested-${item.id}`} item={item} />}
+            scrollEnabled={false}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={['#3b82f6']}
+                    tintColor="#3b82f6"
+                />
+            }
+        />
+    )
 }
 
 export default SearchPage

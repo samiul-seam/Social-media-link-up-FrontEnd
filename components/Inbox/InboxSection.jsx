@@ -1,17 +1,24 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, RefreshControl } from 'react-native'
 import ChatCard from './ChatCard'
 import { router } from 'expo-router'
 import { useState, useMemo, useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import authApiClient from '../../services/auth-api-client'
 import useAuthContext from '../../hooks/useAuthContext'
-import useInbox from '../../hooks/useInbox'
- 
+import { useInboxContext } from '../../context/InboxContext'
+
 const InboxSection = () => {
     const [query, setQuery] = useState('')
     const { user } = useAuthContext()
-    const { chats, loading, markAsRead, setChats } = useInbox()
+    const { chats, loading, markAsRead, setChats, fetchChatList } = useInboxContext()
     const [toast, setToast] = useState(false)
+    const [refreshing, setRefreshing] = useState(false)
+
+    const onRefresh = async () => {
+        setRefreshing(true)
+        await fetchChatList()  // ← get this from useInboxContext
+        setRefreshing(false)
+    }
 
     const filteredChats = useMemo(() => {
         if (!query.trim()) return chats
@@ -102,6 +109,14 @@ const InboxSection = () => {
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={renderItem}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#3b82f6']}
+                            tintColor="#3b82f6"
+                        />
+                    }
                     ListEmptyComponent={
                         <View className="mt-20 items-center">
                             <Text className="text-gray-400">No conversations found</Text>
@@ -109,12 +124,12 @@ const InboxSection = () => {
                     }
                 />
             )}
-
             {toast && (
                 <View className="absolute top-16 left-4 right-4 z-50 bg-gray-800 rounded-xl px-4 py-3 items-center">
                     <Text className="text-white text-sm font-medium">Conversation deleted</Text>
                 </View>
             )}
+
         </View>
     )
 }

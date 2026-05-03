@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, FlatList, Modal, Pressable, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, FlatList, Modal, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -24,6 +24,9 @@ const ProfileScreen = ({ userId = null }) => {
   const [following, setFollowing] = useState(false)
   const [followId, setFollowId] = useState(null)
   const [followLoading, setFollowLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  
 
   const isOwner = !userId || userId === currentUser?.id
 
@@ -65,6 +68,12 @@ const ProfileScreen = ({ userId = null }) => {
       fetchProfile()
     }, [fetchProfile])
   )
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await fetchProfile()
+    setRefreshing(false)
+  }
 
   const handleFollow = async () => {
     setFollowLoading(true)
@@ -131,7 +140,17 @@ const ProfileScreen = ({ userId = null }) => {
 
 
   return (
-    <ScrollView className="flex-1 bg-white">
+    <ScrollView
+      className="flex-1 bg-white"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#3b82f6']}
+          tintColor="#3b82f6"
+        />
+      }
+    >
 
       {/* Back button for other user profile */}
       {!isOwner && (

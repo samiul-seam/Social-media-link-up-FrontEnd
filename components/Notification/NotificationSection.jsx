@@ -1,4 +1,4 @@
-import { View, Text, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import NotificationCard from './NotificationCard'
 import { useCallback, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
@@ -6,20 +6,30 @@ import authApiClient from '../../services/auth-api-client'
 
 const NotificationSection = () => {
     const [notifications, setNotifications] = useState([])
-    const loadingRef = useRef(false)
+    const [loading, setLoading] = useState(false)
+    const [refreshing, setRefreshing] = useState(false)
+
+    const fetchNotifications = async () => {
+        try {
+            const res = await authApiClient.get('/notification/')
+            setNotifications(res.data)
+        } catch {}
+    }
 
     useFocusEffect(
         useCallback(() => {
-            if (loadingRef.current) return
-            loadingRef.current = true
-            authApiClient.get('/notification/')
-                .then(res => setNotifications(res.data))
-                .catch(() => { })
-                .finally(() => { loadingRef.current = false })
+            setLoading(true)
+            fetchNotifications().finally(() => setLoading(false))
         }, [])
     )
 
-    if (loadingRef.current) return (
+    const onRefresh = async () => {
+        setRefreshing(true)
+        await fetchNotifications()
+        setRefreshing(false)
+    }
+
+    if (loading) return (
         <View style={{ height: 300 }} className="justify-center items-center">
             <ActivityIndicator size="small" color="#3b82f6" />
         </View>
@@ -41,9 +51,16 @@ const NotificationSection = () => {
                     <View className="border-b border-gray-100 mx-4" />
                 </View>
             )}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={['#3b82f6']}
+                    tintColor="#3b82f6"
+                />
+            }
         />
     )
 }
-
 
 export default NotificationSection
