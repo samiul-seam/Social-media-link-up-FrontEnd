@@ -1,24 +1,25 @@
-import { View, Text, FlatList, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, ActivityIndicator } from 'react-native'
 import NotificationCard from './NotificationCard'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 import authApiClient from '../../services/auth-api-client'
 
 const NotificationSection = () => {
     const [notifications, setNotifications] = useState([])
-    const [loading, setLoading] = useState(true)
+    const loadingRef = useRef(false)
 
     useFocusEffect(
         useCallback(() => {
-            setLoading(true)
+            if (loadingRef.current) return
+            loadingRef.current = true
             authApiClient.get('/notification/')
                 .then(res => setNotifications(res.data))
                 .catch(() => { })
-                .finally(() => setLoading(false))
+                .finally(() => { loadingRef.current = false })
         }, [])
     )
 
-    if (loading) return (
+    if (loadingRef.current) return (
         <View style={{ height: 300 }} className="justify-center items-center">
             <ActivityIndicator size="small" color="#3b82f6" />
         </View>

@@ -164,7 +164,10 @@ const PostCard = ({ post, onCommentPress }) => {
           {likeLoading ? (
             <ActivityIndicator size="small" color="red" />
           ) : (
-            <Text>{liked ? '❤️' : '🤍'}</Text>
+            <Text>{liked ?
+              <Ionicons name='heart' size={20} color="red" />
+              : <Ionicons name='heart-outline' size={20} />}
+            </Text>
           )}
           <Text className={`${liked ? 'text-red-500' : 'text-gray-600'}`}>Like</Text>
         </TouchableOpacity>

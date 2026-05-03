@@ -1,8 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthContext from '../../hooks/useAuthContext';
-import { useEffect, useState } from 'react';
-import authApiClient from '../../services/auth-api-client';
 import useNotification from '../../hooks/useNotification';
 
 const tabs = [

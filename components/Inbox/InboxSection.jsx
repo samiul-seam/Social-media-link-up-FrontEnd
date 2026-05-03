@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native'
 import ChatCard from './ChatCard'
 import { router } from 'expo-router'
 import { useState, useMemo, useCallback } from 'react'
@@ -10,7 +10,8 @@ import useInbox from '../../hooks/useInbox'
 const InboxSection = () => {
     const [query, setQuery] = useState('')
     const { user } = useAuthContext()
-    const { chats, loading, markAsRead } = useInbox()
+    const { chats, loading, markAsRead, setChats } = useInbox()
+    const [toast, setToast] = useState(false)
 
     const filteredChats = useMemo(() => {
         if (!query.trim()) return chats
@@ -20,7 +21,7 @@ const InboxSection = () => {
     }, [query, chats])
 
     const handlePush = useCallback(async (item) => {
-        markAsRead(item.id) // instant UI update
+        markAsRead(item.id)
         try {
             await authApiClient.post(`/inboxes/${item.id}/messages/mark_read/`)
         } catch (err) {
@@ -32,11 +33,37 @@ const InboxSection = () => {
         })
     }, [user.id])
 
+    const handleLongPress = (item) => {
+        Alert.alert(
+            'Delete Conversation',
+            `Delete chat with ${item.other_user.full_name}?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await authApiClient.delete(`/inboxes/${item.id}/`)
+                            setChats(prev => prev.filter(c => c.id !== item.id))
+                            setToast(true)
+                            setTimeout(() => setToast(false), 2000)
+                        } catch {
+                            console.log('delete chat failed')
+                        }
+                    }
+                }
+            ]
+        )
+    }
+
     const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => handlePush(item)}>
-            <ChatCard item={item} currentUserId={user.id} />
-            <View className="border-b border-gray-100 mx-4" />
-        </TouchableOpacity>
+        <ChatCard
+            item={item}
+            currentUserId={user.id}
+            onLongPress={handleLongPress}
+            onPress={() => handlePush(item)}
+        />
     )
 
     return (
@@ -48,9 +75,9 @@ const InboxSection = () => {
                     </TouchableOpacity>
                     <Text className="text-xl font-bold text-gray-800">Messages</Text>
                 </View>
-                <TouchableOpacity>
+                {/* <TouchableOpacity> // will add latere
                     <Text className="text-2xl">✏️</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
 
             <View className="px-4 py-2">
@@ -81,6 +108,12 @@ const InboxSection = () => {
                         </View>
                     }
                 />
+            )}
+
+            {toast && (
+                <View className="absolute top-16 left-4 right-4 z-50 bg-gray-800 rounded-xl px-4 py-3 items-center">
+                    <Text className="text-white text-sm font-medium">Conversation deleted</Text>
+                </View>
             )}
         </View>
     )

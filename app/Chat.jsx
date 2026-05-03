@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { View, Text, TextInput, TouchableOpacity, FlatList, Animated, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, FlatList, Animated, Alert, ActivityIndicator, Modal, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -18,14 +18,19 @@ export default function ChatScreen() {
     const currentUserId = Number(userId)
     const { authTokens } = useAuthContext()
 
-
     const [message, setMessage] = useState('')
     const [chatMessages, setChatMessages] = useState([])
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
     const flatListRef = useRef(null)
     const animatedHeight = useKeyboardHeight()
-    const wsRef = useRef(null) // for web socket 
+    const wsRef = useRef(null)
+    const inputRef = useRef(null)
+
+    // edit/delete state
+    const [editingMessage, setEditingMessage] = useState(null)
+    const [menuVisible, setMenuVisible] = useState(false)
+    const [selectedMessage, setSelectedMessage] = useState(null)
 
     const fetchMessages = async () => {
         try {
@@ -48,19 +53,61 @@ export default function ChatScreen() {
         ? (chatMessages[0].sender_profile.id === currentUserId
             ? chatMessages[0].receiver_profile
             : chatMessages[0].sender_profile)
-        : null;
+        : null
+
+    const handleEditRequest = (item) => {
+        setSelectedMessage(item)
+        setMenuVisible(true)
+    }
+
+    const handleEditConfirm = () => {
+        setMenuVisible(false)
+        setEditingMessage(selectedMessage)
+        setMessage(selectedMessage.message)
+        inputRef.current?.focus()
+    }
+
+    const handleDeleteConfirm = async () => {
+        setMenuVisible(false)
+        try {
+            await authApiClient.delete(`/inboxes/${numericChatId}/messages/${selectedMessage.id}/`)
+            setChatMessages(prev => prev.filter(m => m.id !== selectedMessage.id))
+        } catch {
+            Alert.alert('Error', 'Failed to delete message.')
+        } finally {
+            setSelectedMessage(null)
+        }
+    }
 
     const handleSend = async () => {
         const trimmed = message.trim()
         if (!trimmed || sending) return
 
+        // EDIT mode
+        if (editingMessage) {
+            try {
+                await authApiClient.patch(`/inboxes/${numericChatId}/messages/${editingMessage.id}/`, {
+                    message: trimmed
+                })
+                setChatMessages(prev =>
+                    prev.map(m => m.id === editingMessage.id ? { ...m, message: trimmed } : m)
+                )
+            } catch {
+                Alert.alert('Error', 'Failed to edit message.')
+            } finally {
+                setEditingMessage(null)
+                setMessage('')
+            }
+            return
+        }
+
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ message: trimmed }))
             setMessage('')
-            return  // ← exit here, WS handles it
+            return
         }
 
-        // fallback to REST if WS is down
+        // fallback REST
         setSending(true)
         try {
             await authApiClient.post(`/inboxes/${numericChatId}/messages/`, { message: trimmed })
@@ -73,7 +120,6 @@ export default function ChatScreen() {
         }
     }
 
-    // ── WebSocket — only new addition ──────────────────────────────────
     useEffect(() => {
         if (!authTokens?.access || !numericChatId) return
 
@@ -85,7 +131,6 @@ export default function ChatScreen() {
             setChatMessages((prev) => {
                 if (prev.find((m) => m.id === data.message_id)) return prev
 
-                // reuse full profile objects from existing messages
                 const existingMsg = prev[0]
                 const mySelf = existingMsg
                     ? (existingMsg.sender_profile.id === currentUserId
@@ -117,7 +162,6 @@ export default function ChatScreen() {
     const renderItem = ({ item, index }) => {
         const prevMessage = chatMessages[index + 1]
         const nextMessage = chatMessages[index - 1]
-
         const isFirst = prevMessage?.sender_profile?.id !== item.sender_profile?.id
         const isLast = nextMessage?.sender_profile?.id !== item.sender_profile?.id
 
@@ -128,23 +172,21 @@ export default function ChatScreen() {
                 currentUserId={currentUserId}
                 isFirst={isFirst}
                 isLast={isLast}
+                onEditRequest={handleEditRequest}
             />
         )
     }
 
-
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
 
-            {/* Header — fix: was parsedChat.avatar / parsedChat.name (undefined) */}
+            {/* Header */}
             <View className="flex-row items-center px-3 py-3 border-b border-gray-200 bg-white">
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
                 <Image
-                    source={otherUser?.profile_picture
-                        ? { uri: otherUser?.profile_picture }
-                        : defaultImg}
+                    source={otherUser?.profile_picture ? { uri: otherUser?.profile_picture } : defaultImg}
                     style={{ width: 40, height: 40, borderRadius: 20, marginLeft: 10 }}
                 />
                 <Text numberOfLines={1} className="ml-2 font-semibold text-gray-800 text-base flex-1">
@@ -178,7 +220,19 @@ export default function ChatScreen() {
             {/* Input */}
             <Animated.View style={{ marginBottom: animatedHeight }}>
                 <View className="bg-white border-t border-gray-200 flex-row items-end px-3 py-2 gap-2">
+
+                    {/* Edit banner */}
+                    {editingMessage && (
+                        <View className="absolute -top-9 left-0 right-0 px-4 py-2 bg-blue-50 flex-row justify-between items-center">
+                            <Text className="text-blue-500 text-xs font-medium">Editing message</Text>
+                            <TouchableOpacity onPress={() => { setEditingMessage(null); setMessage('') }}>
+                                <Ionicons name="close-circle" size={18} color="#3b82f6" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     <TextInput
+                        ref={inputRef}
                         value={message}
                         onChangeText={setMessage}
                         placeholder="Type a message..."
@@ -189,8 +243,7 @@ export default function ChatScreen() {
                     <TouchableOpacity
                         onPress={handleSend}
                         disabled={sending || !message.trim()}
-                        className={`w-10 h-10 rounded-full items-center justify-center mb-0.5 ${sending || !message.trim() ? 'bg-gray-200' : 'bg-blue-500'
-                            }`}
+                        className={`w-10 h-10 rounded-full items-center justify-center mb-0.5 ${sending || !message.trim() ? 'bg-gray-200' : 'bg-blue-500'}`}
                     >
                         {sending ? (
                             <ActivityIndicator size="small" color="#fff" />
@@ -204,6 +257,38 @@ export default function ChatScreen() {
                     </TouchableOpacity>
                 </View>
             </Animated.View>
+
+            {/* Long-press Menu Modal */}
+            <Modal
+                transparent
+                visible={menuVisible}
+                animationType="fade"
+                onRequestClose={() => setMenuVisible(false)}
+            >
+                <Pressable
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+                    onPress={() => setMenuVisible(false)}
+                >
+                    <Pressable className="bg-white rounded-t-2xl px-4 pt-4 pb-8">
+                        <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
+                        <TouchableOpacity
+                            onPress={handleEditConfirm}
+                            className="flex-row items-center gap-3 py-3 border-b border-gray-100"
+                        >
+                            <Ionicons name="pencil-outline" size={20} color="#374151" />
+                            <Text className="text-gray-800 text-base">Edit message</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleDeleteConfirm}
+                            className="flex-row items-center gap-3 py-3"
+                        >
+                            <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                            <Text className="text-red-500 text-base">Delete message</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
         </SafeAreaView>
     )
 }
