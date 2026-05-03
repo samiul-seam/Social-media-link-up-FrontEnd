@@ -1,15 +1,15 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { View, Text, TextInput, TouchableOpacity, FlatList, Animated, Alert, ActivityIndicator, Modal, Pressable } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, FlatList, Platform, Alert, ActivityIndicator, Modal, Pressable, KeyboardAvoidingView } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRef, useState, useCallback, useEffect } from 'react'
 import Message from '../components/Inbox/Message'
-import useKeyboardHeight from '../hooks/useKayboardHeight'
 import authApiClient from '../services/auth-api-client'
 import defaultImg from '../assets/default_img.jpg'
 import useAuthContext from '../hooks/useAuthContext'
-const WS_BASE = 'ws://192.168.10.40:8000'
+import { useInboxContext } from '../context/InboxContext'
+const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
 
 
 export default function ChatScreen() {
@@ -17,13 +17,13 @@ export default function ChatScreen() {
     const numericChatId = Number(chatId)
     const currentUserId = Number(userId)
     const { authTokens } = useAuthContext()
+    const { markAsRead } = useInboxContext()
 
     const [message, setMessage] = useState('')
     const [chatMessages, setChatMessages] = useState([])
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
     const flatListRef = useRef(null)
-    const animatedHeight = useKeyboardHeight()
     const wsRef = useRef(null)
     const inputRef = useRef(null)
 
@@ -46,6 +46,7 @@ export default function ChatScreen() {
     useFocusEffect(
         useCallback(() => {
             fetchMessages()
+            markAsRead(numericChatId)
         }, [])
     )
 
@@ -179,46 +180,49 @@ export default function ChatScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
 
-            {/* Header */}
-            <View className="flex-row items-center px-3 py-3 border-b border-gray-200 bg-white">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="black" />
-                </TouchableOpacity>
-                <Image
-                    source={otherUser?.profile_picture ? { uri: otherUser?.profile_picture } : defaultImg}
-                    style={{ width: 40, height: 40, borderRadius: 20, marginLeft: 10 }}
-                />
-                <Text numberOfLines={1} className="ml-2 font-semibold text-gray-800 text-base flex-1">
-                    {otherUser?.full_name}
-                </Text>
-            </View>
-
-            {/* Messages */}
-            {loading ? (
-                <View className="flex-1 items-center justify-center">
-                    <Text className="text-gray-400">Loading messages...</Text>
+                {/* Header */}
+                <View className="flex-row items-center px-3 py-3 border-b border-gray-200 bg-white">
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color="black" />
+                    </TouchableOpacity>
+                    <Image
+                        source={otherUser?.profile_picture ? { uri: otherUser?.profile_picture } : defaultImg}
+                        style={{ width: 40, height: 40, borderRadius: 20, marginLeft: 10 }}
+                    />
+                    <Text numberOfLines={1} className="ml-2 font-semibold text-gray-800 text-base flex-1">
+                        {otherUser?.full_name}
+                    </Text>
                 </View>
-            ) : (
-                <FlatList
-                    ref={flatListRef}
-                    data={chatMessages}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={renderItem}
-                    showsVerticalScrollIndicator={false}
-                    style={{ flex: 1 }}
-                    inverted
-                    contentContainerStyle={{ padding: 10 }}
-                    ListEmptyComponent={
-                        <View className="flex-1 items-center justify-center mt-20 gap-2">
-                            <Text className="text-gray-400">No messages yet. Say hi! 👋</Text>
-                        </View>
-                    }
-                />
-            )}
 
-            {/* Input */}
-            <Animated.View style={{ marginBottom: animatedHeight }}>
+                {/* Messages */}
+                {loading ? (
+                    <View className="flex-1 items-center justify-center">
+                        <Text className="text-gray-400">Loading messages...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        ref={flatListRef}
+                        data={chatMessages}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={renderItem}
+                        showsVerticalScrollIndicator={false}
+                        style={{ flex: 1 }}
+                        inverted
+                        contentContainerStyle={{ padding: 10 }}
+                        ListEmptyComponent={
+                            <View className="flex-1 items-center justify-center mt-20 gap-2">
+                                <Text className="text-gray-400">No messages yet. Say hi! 👋</Text>
+                            </View>
+                        }
+                    />
+                )}
+
+                {/* Input */}
                 <View className="bg-white border-t border-gray-200 flex-row items-end px-3 py-2 gap-2">
 
                     {/* Edit banner */}
@@ -256,39 +260,39 @@ export default function ChatScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
-            </Animated.View>
 
-            {/* Long-press Menu Modal */}
-            <Modal
-                transparent
-                visible={menuVisible}
-                animationType="fade"
-                onRequestClose={() => setMenuVisible(false)}
-            >
-                <Pressable
-                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
-                    onPress={() => setMenuVisible(false)}
+                {/* Long-press Menu Modal */}
+                <Modal
+                    transparent
+                    visible={menuVisible}
+                    animationType="fade"
+                    onRequestClose={() => setMenuVisible(false)}
                 >
-                    <Pressable className="bg-white rounded-t-2xl px-4 pt-4 pb-8">
-                        <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
-                        <TouchableOpacity
-                            onPress={handleEditConfirm}
-                            className="flex-row items-center gap-3 py-3 border-b border-gray-100"
-                        >
-                            <Ionicons name="pencil-outline" size={20} color="#374151" />
-                            <Text className="text-gray-800 text-base">Edit message</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleDeleteConfirm}
-                            className="flex-row items-center gap-3 py-3"
-                        >
-                            <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                            <Text className="text-red-500 text-base">Delete message</Text>
-                        </TouchableOpacity>
+                    <Pressable
+                        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+                        onPress={() => setMenuVisible(false)}
+                    >
+                        <Pressable className="bg-white rounded-t-2xl px-4 pt-4 pb-8">
+                            <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
+                            <TouchableOpacity
+                                onPress={handleEditConfirm}
+                                className="flex-row items-center gap-3 py-3 border-b border-gray-100"
+                            >
+                                <Ionicons name="pencil-outline" size={20} color="#374151" />
+                                <Text className="text-gray-800 text-base">Edit message</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleDeleteConfirm}
+                                className="flex-row items-center gap-3 py-3"
+                            >
+                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                                <Text className="text-red-500 text-base">Delete message</Text>
+                            </TouchableOpacity>
+                        </Pressable>
                     </Pressable>
-                </Pressable>
-            </Modal>
+                </Modal>
 
+            </KeyboardAvoidingView>
         </SafeAreaView>
     )
 }

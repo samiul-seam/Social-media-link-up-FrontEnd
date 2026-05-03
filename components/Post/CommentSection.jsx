@@ -4,6 +4,8 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
@@ -71,38 +73,40 @@ const CommentSection = ({ postId, onClose }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        {/* List */}
+        {isLoading ? (
+          <View style={{ flex: 1 }} className="justify-center items-center">
+            <ActivityIndicator size="small" color="#3b82f6" />
+          </View>
+        ) : comments.length === 0 ? (
+          <View style={{ flex: 1 }} className="justify-center items-center">
+            <Text className="text-gray-400">No comments yet</Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={listRef}
+            data={comments}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <CommentCard
+                item={item}
+                onReply={setReplyTo}
+                postId={postId}
+                onEditRequest={handleEditRequest}
+                onDeleted={() => setChangeComments(prev => !prev)}
+              />
+            )}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 12, paddingBottom: 16 }}
+            style={{ flex: 1 }}
+          />
+        )}
 
-      {/* List */}
-      {isLoading ? (
-        <View style={{ flex: 1 }} className="justify-center items-center">
-          <ActivityIndicator size="small" color="#3b82f6" />
-        </View>
-      ) : comments.length === 0 ? (
-        <View style={{ flex: 1 }} className="justify-center items-center">
-          <Text className="text-gray-400">No comments yet</Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={comments}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <CommentCard
-              item={item}
-              onReply={setReplyTo}
-              postId={postId}
-              onEditRequest={handleEditRequest}
-              onDeleted={() => setChangeComments(prev => !prev)}
-            />
-          )}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 12, paddingBottom: 16 }}
-          style={{ flex: 1 }}
-        />
-      )}
-
-      {/* Input */}
-      <Animated.View style={{ marginBottom: animatedHeight }}>
+        {/* Input */}
         <View className="bg-white border-t border-gray-100">
 
           {/* Reply banner */}
@@ -157,7 +161,7 @@ const CommentSection = ({ postId, onClose }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </Animated.View>
+      </KeyboardAvoidingView>
     </View>
   )
 }

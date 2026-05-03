@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import authApiClient from '../services/auth-api-client'
 import useAuthContext from './useAuthContext'
 
-const WS_BASE = 'ws://192.168.10.40:8000'
+const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
 
 const useInbox = () => {
     const { authTokens } = useAuthContext()

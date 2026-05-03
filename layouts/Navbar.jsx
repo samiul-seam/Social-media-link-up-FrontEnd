@@ -1,9 +1,9 @@
 import { Text, TouchableOpacity, View } from 'react-native'
 import { router } from 'expo-router'
-import useInbox from '../hooks/useInbox'
+import { useInboxContext } from '../context/InboxContext'
 
 const Navbar = () => {
-  const { unreadCount } = useInbox()
+  const { unreadCount } = useInboxContext()
 
   return (
     <View className="px-6 py-4 border-b border-gray-200">

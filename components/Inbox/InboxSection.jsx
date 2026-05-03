@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import authApiClient from '../../services/auth-api-client'
 import useAuthContext from '../../hooks/useAuthContext'
 import useInbox from '../../hooks/useInbox'
-
+ 
 const InboxSection = () => {
     const [query, setQuery] = useState('')
     const { user } = useAuthContext()
