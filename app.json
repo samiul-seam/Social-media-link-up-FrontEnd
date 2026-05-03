@@ -1,18 +1,30 @@
 {
   "expo": {
-    "name": "linkUp-client",
-    "slug": "linkUp-client",
+    "name": "linkUp",
+    "slug": "linkUp",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "linkupclient",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563EB"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/icon.png"
     },
     "android": {
       "edgeToEdgeEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.anonymous.linkUpclient"
+      "package": "com.anonymous.linkUpclient",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#2563EB"
+      }
     },
     "web": {
       "output": "static"

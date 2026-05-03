@@ -181,10 +181,10 @@ export default function ChatScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="height"
+                keyboardVerticalOffset={0}
                 style={{ flex: 1 }}
             >
-
                 {/* Header */}
                 <View className="flex-row items-center px-3 py-3 border-b border-gray-200 bg-white">
                     <TouchableOpacity onPress={() => router.back()}>
@@ -200,6 +200,7 @@ export default function ChatScreen() {
                 </View>
 
                 {/* Messages */}
+
                 {loading ? (
                     <View className="flex-1 items-center justify-center">
                         <Text className="text-gray-400">Loading messages...</Text>
@@ -212,6 +213,8 @@ export default function ChatScreen() {
                         renderItem={renderItem}
                         showsVerticalScrollIndicator={false}
                         style={{ flex: 1 }}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="none"
                         inverted
                         contentContainerStyle={{ padding: 10 }}
                         ListEmptyComponent={
@@ -223,6 +226,7 @@ export default function ChatScreen() {
                 )}
 
                 {/* Input */}
+
                 <View className="bg-white border-t border-gray-200 flex-row items-end px-3 py-2 gap-2">
 
                     {/* Edit banner */}

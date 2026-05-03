@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider } from '../context/AuthContext';
 import { InboxProvider } from '../context/InboxContext';
+import { NotificationProvider } from '../context/NotificationContext'
 
 export default function RootLayout() {
   return (
@@ -11,10 +12,12 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <InboxProvider>
-            <Stack screenOptions={{ headerShown: false }} />
+            <NotificationProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </NotificationProvider>
           </InboxProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
-  );
+  )
 }

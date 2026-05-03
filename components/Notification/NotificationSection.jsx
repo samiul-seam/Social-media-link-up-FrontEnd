@@ -1,33 +1,9 @@
 import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import NotificationCard from './NotificationCard'
-import { useCallback, useRef, useState } from 'react'
-import { useFocusEffect } from 'expo-router'
-import authApiClient from '../../services/auth-api-client'
+import { useNotificationContext } from '../../context/NotificationContext'
 
 const NotificationSection = () => {
-    const [notifications, setNotifications] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [refreshing, setRefreshing] = useState(false)
-
-    const fetchNotifications = async () => {
-        try {
-            const res = await authApiClient.get('/notification/')
-            setNotifications(res.data)
-        } catch {}
-    }
-
-    useFocusEffect(
-        useCallback(() => {
-            setLoading(true)
-            fetchNotifications().finally(() => setLoading(false))
-        }, [])
-    )
-
-    const onRefresh = async () => {
-        setRefreshing(true)
-        await fetchNotifications()
-        setRefreshing(false)
-    }
+    const { notifications, loading, refreshing, onRefresh } = useNotificationContext()
 
     if (loading) return (
         <View style={{ height: 300 }} className="justify-center items-center">

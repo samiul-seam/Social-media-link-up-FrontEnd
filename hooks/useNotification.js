@@ -10,6 +10,7 @@ const useNotification = () => {
     const [unreadCount, setUnreadCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const wsRef = useRef(null)
+    const [refreshing, setRefreshing] = useState(false)
 
     const fetchNotifications = async (showLoading = true) => {
         if (showLoading) setLoading(true)
@@ -29,6 +30,13 @@ const useNotification = () => {
     useEffect(() => {
         fetchNotifications(true)
     }, [])
+
+    const onRefresh = async () => {
+        setRefreshing(true)
+        await fetchNotifications(false)
+        setRefreshing(false)
+    }
+
 
     // WebSocket
     useEffect(() => {
@@ -106,6 +114,8 @@ const useNotification = () => {
     return {
         notifications,
         unreadCount,
+        refreshing,     
+        onRefresh,
         loading,
         fetchNotifications,
         markAsRead,

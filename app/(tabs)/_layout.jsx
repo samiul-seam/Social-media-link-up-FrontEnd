@@ -1,7 +1,8 @@
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthContext from '../../hooks/useAuthContext';
-import useNotification from '../../hooks/useNotification';
+import { useNotificationContext } from '../../context/NotificationContext'
+
 
 const tabs = [
   { name: "index", title: "Home", icon: "home-outline" },
@@ -13,7 +14,7 @@ const tabs = [
 
 export default function TabLayout() {
   const { user, loading } = useAuthContext()
-  const { unreadCount, markAllRead } = useNotification()
+  const { unreadCount, markAllRead } = useNotificationContext()
 
   if (loading) return null;
   if (!user) return <Redirect href="/login" />;
