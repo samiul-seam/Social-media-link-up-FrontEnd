@@ -8,6 +8,24 @@ const useAuth = () => {
     const [errorMsg, setErrorMsg] = useState("");
     const [loading, setLoading] = useState(true);
 
+    const fetchUserProfile = useCallback(async (tokens) => {
+        if (!tokens?.access) {
+            setUser(null);
+            return;
+        }
+        try {
+            const response = await apiClient.get("auth/users/me/", {
+                headers: {
+                    Authorization: `JWT ${tokens.access}`,
+                },
+            });
+            setUser(response.data);
+        } catch (error) {
+            console.log(error);
+            setUser(null);
+        }
+    }, []);
+
     // Load tokens on app start
     useEffect(() => {
         const loadTokens = async () => {
@@ -27,40 +45,15 @@ const useAuth = () => {
         loadTokens();
     }, []);
 
-    useEffect(() => {
-        if (authTokens) {
-            fetchUserProfile();
-        } else {
-            setUser(null);
-        }
-    }, [authTokens]);
- 
-    const fetchUserProfile = useCallback(async (tokens = authTokens) => {
-        if (!tokens?.access) {
-            setUser(null);
-            return;
-        } 
-        try {
-            const response = await apiClient.get("auth/users/me/", {
-                headers: {
-                    Authorization: `JWT ${tokens.access}`,
-                },
-            });
-            setUser(response.data);
-        } catch (error) {
-            console.log(error);
-            setUser(null);
-        }
-    }, [authTokens]);
-
     const loginUser = async (userData) => {
         setErrorMsg("");
         setLoading(true);
         try {
             const response = await apiClient.post("/auth/jwt/create/", userData);
-            setAuthTokens(response.data);
-            await AsyncStorage.setItem("authTokens", JSON.stringify(response.data));
-            await fetchUserProfile(); 
+            const tokens = response.data
+            setAuthTokens(tokens);
+            await AsyncStorage.setItem("authTokens", JSON.stringify(tokens));
+            await fetchUserProfile(tokens)  // ← pass tokens directly
             return { success: true };
         } catch (error) {
             setErrorMsg(error.response?.data?.detail || "Login failed");
@@ -74,15 +67,17 @@ const useAuth = () => {
         setErrorMsg("");
         setLoading(true);
         try {
-            await apiClient.post("/auth/users/", userData);
-            return {
-                success: true,
-                message: "Registration successful. Check your email to activate your account.",
-            };
-        } catch {
+            const res = await apiClient.post("/auth/users/", userData);
+            console.log('Register success:', res.data)
+            return { success: true }
+        } catch (err) {
+            const errorData = err.response?.data
+            const firstError = errorData
+                ? Object.values(errorData)[0]?.[0]
+                : "Registration failed"
             return {
                 success: false,
-                message: "Registration failed",
+                message: firstError || "Registration failed",
             };
         } finally {
             setLoading(false);

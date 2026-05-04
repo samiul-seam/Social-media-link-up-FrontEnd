@@ -26,13 +26,14 @@ const MOODS = [
 
 const PostCard = ({ post, onCommentPress }) => {
   const { user } = useAuthContext();
-  const myLike = post.likes?.find((like) => like.user === user.id)
+  const myLike = post?.likes?.find((like) => like.user === user?.id)
   const [liked, setLiked] = useState(!!myLike)
   const [likeId, setLikeId] = useState(myLike?.id ?? null)
-  const [likeCount, setLikeCount] = useState(post.likes?.length ?? 0)
+  const [likeCount, setLikeCount] = useState(post?.likes?.length ?? 0)
   const [shareOpen, setShareOpen] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
-  if (!post) return null;
+
+  if (!post) return null
 
   const formattedTime = new Date(post.created_at).toLocaleString('en-US', {
     month: 'short',

@@ -7,12 +7,35 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
+import useAuthContext from "../../hooks/useAuthContext";
 
-export default function SignupScreen({ onSignup, onGoToLogin }) {
+const Field = ({ label, icon, error, children }) => {
+    const borderColor = error ? "border-red-400" : "border-gray-200";
+    return (
+        <View className="mb-4">
+            <Text className="text-gray-700 text-sm font-medium mb-1.5">
+                {label}
+            </Text>
+            <View className={`flex-row items-center bg-gray-50 border rounded-xl px-4 gap-2 ${borderColor}`}>
+                <Ionicons name={icon} size={17} color="#9ca3af" />
+                {children}
+            </View>
+            {error && (
+                <Text className="text-red-400 text-xs mt-1">
+                    {error.message}
+                </Text>
+            )}
+        </View>
+    );
+};
+
+export default function SignupScreen({ onGoToLogin }) {
+    const { registerUser } = useAuthContext()
     const {
         control,
         handleSubmit,
@@ -21,40 +44,32 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
     } = useForm();
 
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const password = watch("password");
+    const password = watch("password")
 
-    const Field = ({
-        label,
-        placeholder,
-        icon,
-        error,
-        children,
-    }) => {
-        const borderColor = error ? "border-red-400" : "border-gray-200";
-
-        return (
-            <View className="mb-4">
-                <Text className="text-gray-700 text-sm font-medium mb-1.5">
-                    {label}
-                </Text>
-
-                <View className={`flex-row items-center bg-gray-50 border rounded-xl px-4 gap-2 ${borderColor}`}>
-                    <Ionicons name={icon} size={17} color="#9ca3af" />
-                    {children}
-                </View>
-
-                {error && (
-                    <Text className="text-red-400 text-xs mt-1">
-                        {error.message}
-                    </Text>
-                )}
-            </View>
-        );
-    };
-
-    const onSubmit = (data) => {
-        onSignup?.(data);
+    const onSubmit = async (data) => {
+        setLoading(true)
+        try {
+            const result = await registerUser({
+                first_name: data.firstName,
+                last_name: data.lastName,
+                email: data.email,
+                password: data.password,
+                re_password: data.confirmPassword
+            })
+            if (result.success) {
+                Alert.alert('Success! 🎉', 'Account created! Please login.', [
+                    { text: 'OK', onPress: onGoToLogin }
+                ])
+            } else {
+                Alert.alert('Error', result.message || 'Registration failed')
+            }
+        } catch {
+            Alert.alert('Error', 'Something went wrong')
+        } finally {
+            setLoading(false)
+        }
     };
 
     return (
@@ -92,6 +107,8 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
                                         value={value}
                                         onChangeText={onChange}
                                         autoCapitalize="words"
+                                        blurOnSubmit={false}
+                                        returnKeyType="next"
                                     />
                                 )}
                             />
@@ -110,6 +127,8 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
                                         value={value}
                                         onChangeText={onChange}
                                         autoCapitalize="words"
+                                        blurOnSubmit={false}
+                                        returnKeyType="next"
                                     />
                                 )}
                             />
@@ -135,27 +154,29 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
                                         onChangeText={onChange}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
+                                        blurOnSubmit={false}
+                                        returnKeyType="next"
                                     />
                                 )}
                             />
                         </Field>
 
                         {/* Password */}
-                        <Field label="Password" icon="shield-checkmark-outline" error={errors.Password}>
+                        <Field label="Password" icon="shield-checkmark-outline" error={errors.password}>
                             <Controller
                                 control={control}
-                                name="Password"
-                                rules={{
-                                    required: "Please write your password",
-                                }}
+                                name="password"
+                                rules={{ required: "Please write your password" }}
                                 render={({ field: { onChange, value } }) => (
                                     <>
                                         <TextInput
                                             className="flex-1 py-3.5 text-gray-800 text-sm"
-                                            placeholder="Wright your password"
+                                            placeholder="Write your password"
                                             value={value}
                                             onChangeText={onChange}
                                             secureTextEntry={!showPassword}
+                                            blurOnSubmit={false}
+                                            returnKeyType="next"
                                         />
                                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                             <Ionicons
@@ -187,6 +208,8 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
                                             value={value}
                                             onChangeText={onChange}
                                             secureTextEntry={!showPassword}
+                                            blurOnSubmit={false}
+                                            returnKeyType="done"
                                         />
                                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                             <Ionicons
@@ -203,10 +226,11 @@ export default function SignupScreen({ onSignup, onGoToLogin }) {
                         {/* Button */}
                         <TouchableOpacity
                             onPress={handleSubmit(onSubmit)}
-                            className="bg-indigo-600 rounded-xl py-4 items-center mt-2"
+                            disabled={loading}
+                            className={`rounded-xl py-4 items-center mt-2 ${loading ? 'bg-indigo-300' : 'bg-indigo-600'}`}
                         >
                             <Text className="text-white font-semibold text-sm">
-                                Create Account
+                                {loading ? 'Creating Account...' : 'Create Account'}
                             </Text>
                         </TouchableOpacity>
 

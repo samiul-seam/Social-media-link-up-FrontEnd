@@ -9,6 +9,7 @@ import authApiClient from '../services/auth-api-client'
 import defaultImg from '../assets/default_img.jpg'
 import useAuthContext from '../hooks/useAuthContext'
 import { useInboxContext } from '../context/InboxContext'
+import { StatusBar } from 'react-native'
 const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
 
 
@@ -181,8 +182,8 @@ export default function ChatScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
             <KeyboardAvoidingView
-                behavior="height"
-                keyboardVerticalOffset={0}
+                behavior="padding"
+                keyboardVerticalOffset={Platform.OS === 'android' ? StatusBar.currentHeight : 0}
                 style={{ flex: 1 }}
             >
                 {/* Header */}

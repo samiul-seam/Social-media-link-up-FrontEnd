@@ -7,16 +7,17 @@ import authApiClient from '../services/auth-api-client'
 import FollowsCard from '../components/Profile/FollowsCard'
 
 export default function FollowListScreen() {
-    const { type } = useLocalSearchParams()
+    const { type, userId } = useLocalSearchParams()
     const [activeTab, setActiveTab] = useState(type ?? 'followers')
     const [followers, setFollowers] = useState([])
     const [following, setFollowing] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        const query = userId ? `?user_id=${userId}` : ''
         Promise.all([
-            authApiClient.get('/follows/followers/'),
-            authApiClient.get('/follows/following/'),
+            authApiClient.get(`/follows/followers/${query}`),
+            authApiClient.get(`/follows/following/${query}`),
         ])
             .then(([followersRes, followingRes]) => {
                 setFollowers(followersRes.data)
@@ -24,7 +25,7 @@ export default function FollowListScreen() {
             })
             .catch(err => console.log(err))
             .finally(() => setLoading(false))
-    }, [])
+    }, [userId])
 
     const list = activeTab === 'followers' ? followers : following
 

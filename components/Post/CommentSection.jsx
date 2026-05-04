@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
@@ -12,6 +13,7 @@ import {
 import CommentCard from './CommentCard'
 import useFetchComments from '../../hooks/useFetchComments'
 import authApiClient from '../../services/auth-api-client'
+import { StatusBar } from 'react-native'
 
 const CommentSection = ({ postId, onClose }) => {
   const [changeComments, setChangeComments] = useState(false)
@@ -68,9 +70,9 @@ const CommentSection = ({ postId, onClose }) => {
   }
 
   return (
-
     <KeyboardAvoidingView
-      behavior="height"
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'android' ? StatusBar.currentHeight : 0}
       style={{ flex: 1, backgroundColor: 'white' }}
     >
       {/* List */}

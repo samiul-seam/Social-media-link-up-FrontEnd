@@ -8,11 +8,15 @@ import defaultImg from '../../assets/default_img.jpg'
 import authApiClient from '../../services/auth-api-client'
 import ProfileSkeleton from './ProfileSkeleton'
 
-const StatItem = ({ count, label }) => (
-  <View className="items-center">
+const StatItem = ({ count, label, onPress }) => (
+  <TouchableOpacity
+    className="items-center"
+    onPress={onPress}
+    disabled={!onPress}
+  >
     <Text className="text-3xl font-bold text-gray-800">{count}</Text>
     <Text className="text-xl text-gray-500">{label}</Text>
-  </View>
+  </TouchableOpacity>
 )
 
 const ProfileScreen = ({ userId = null }) => {
@@ -26,31 +30,42 @@ const ProfileScreen = ({ userId = null }) => {
   const [followLoading, setFollowLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
-  
-
   const isOwner = !userId || userId === currentUser?.id
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
     try {
       if (isOwner) {
-        const res = await authApiClient.get('/posts/my_posts/')
-        setPosts(res.data)
-        setProfileUser(currentUser)
+        const [postsRes, userRes] = await Promise.all([
+          authApiClient.get('/posts/my_posts/'),
+          authApiClient.get(`/auth/users/me/`),
+        ])
+        setPosts(postsRes.data)
+        setProfileUser({
+          ...currentUser,
+          followers_count: userRes.data.followers_count,
+          following_count: userRes.data.following_count,
+        })
       } else {
         const [userRes, postsRes, followRes] = await Promise.all([
           authApiClient.get(`/users/${userId}/`),
           authApiClient.get(`/posts/user_posts/?user_id=${userId}`),
-          authApiClient.get(`/follows/?followed=${userId}`),
+          authApiClient.get(`/follows/?following=${userId}`),
         ])
         setProfileUser(userRes.data)
+
         const uniquePosts = postsRes.data.filter(
           (post, index, self) => index === self.findIndex(p => p.id === post.id)
         )
         setPosts(uniquePosts)
-        if (followRes.data.length > 0) {
+
+        const matchingFollow = followRes.data.find(
+          f => String(f.following) === String(userId)
+        )
+
+        if (matchingFollow) {
           setFollowing(true)
-          setFollowId(followRes.data[0].id)
+          setFollowId(matchingFollow.id)
         } else {
           setFollowing(false)
           setFollowId(null)
@@ -126,19 +141,6 @@ const ProfileScreen = ({ userId = null }) => {
 
   if (!profileUser || loading) return <ProfileSkeleton />
 
-
-  const StatItem = ({ count, label, onPress }) => (
-    <TouchableOpacity
-      className="items-center"
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <Text className="text-3xl font-bold text-gray-800">{count}</Text>
-      <Text className="text-xl text-gray-500">{label}</Text>
-    </TouchableOpacity>
-  )
-
-
   return (
     <ScrollView
       className="flex-1 bg-white"
@@ -151,7 +153,6 @@ const ProfileScreen = ({ userId = null }) => {
         />
       }
     >
-
       {/* Back button for other user profile */}
       {!isOwner && (
         <View className="flex-row items-center px-4 py-3 border-b border-gray-200">
@@ -184,17 +185,23 @@ const ProfileScreen = ({ userId = null }) => {
               <StatItem
                 count={profileUser.followers_count ?? 0}
                 label="Followers"
-                onPress={() => router.push({ pathname: '/FollowList', params: { type: 'followers' } })}
+                onPress={() => router.push({
+                  pathname: '/FollowList',
+                  params: { type: 'followers', userId: profileUser.id }
+                })}
               />
               <StatItem
                 count={profileUser.following_count ?? 0}
                 label="Following"
-                onPress={() => router.push({ pathname: '/FollowList', params: { type: 'following' } })}
+                onPress={() => router.push({
+                  pathname: '/FollowList',
+                  params: { type: 'following', userId: profileUser.id }
+                })}
               />
             </View>
           </View>
 
-          {/* menu — only for owner */}
+          {/* Menu — only for owner */}
           {isOwner && (
             <TouchableOpacity onPress={() => setMenuVisible(true)}>
               <Ionicons name="ellipsis-vertical" size={22} color="black" />

@@ -10,73 +10,74 @@ const TRENDING = ["#DesignSystems", "#AITools", "#Frontend", "#OpenAI", "#Startu
 
 const SearchPage = () => {
     const [query, setQuery] = useState("");
+    const [submittedQuery, setSubmittedQuery] = useState("")
     const [activeTab, setActiveTab] = useState("people");
     const [people, setPeople] = useState([]);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [trendingPost, setTrendingPost] = useState([])
 
-    // debounce search — wait 800ms after user stops typing
-    useEffect(() => {
-        if (!query.trim()) {
-            setPeople([])
-            setPosts([])
-            setTrendingPost([])
-            return
+    const handleSearch = async () => {
+        if (!query.trim()) return
+        setSubmittedQuery(query.trim())
+        setLoading(true)
+        try {
+            const [peopleRes, postsRes] = await Promise.all([
+                authApiClient.get(`/users/?search=${query.trim()}`),
+                authApiClient.get(`/posts/?search=${query.trim()}`),
+            ])
+            setPeople(peopleRes.data)
+            const uniquePosts = postsRes.data.filter(
+                (post, index, self) => index === self.findIndex(p => p.id === post.id)
+            )
+            setPosts(uniquePosts)
+        } catch (err) {
+            console.log('Search error:', err)
+        } finally {
+            setLoading(false)
         }
+    }
 
-        const timer = setTimeout(async () => {
-            setLoading(true)
-            try {
-                const [peopleRes, postsRes, trendingPost] = await Promise.all([
-                    authApiClient.get(`/users/?search=${query}`),
-                    authApiClient.get(`/posts/?search=${query}`),
-                    authApiClient.get('/trending/')
-                ])
-                setPeople(peopleRes.data)
-                setTrendingPost(trendingPost.data)
-                const uniquePosts = postsRes.data.filter(
-                    (post, index, self) => index === self.findIndex(p => p.id === post.id)
-                )
-                setPosts(uniquePosts)
-            } catch (err) {
-                console.log('Search error:', err)
-            } finally {
-                setLoading(false)
-            }
-        }, 1000)
+    const handleClear = () => {
+        setQuery("")
+        setSubmittedQuery("")
+        setPeople([])
+        setPosts([])
+    }
 
-        return () => clearTimeout(timer)
-    }, [query])
-
-    const isSearching = query.trim().length > 0
+    const isSearching = submittedQuery.length > 0
 
     return (
         <SafeAreaView className="flex-1 bg-white w-full" edges={['top', 'left', 'right']}>
             <View className="px-4 pb-3">
                 <Text className="text-gray-900 text-2xl font-bold mb-4">Search</Text>
-                <View className="flex-row items-center bg-gray-100 border border-gray-200 rounded-xl px-3">
-                    <Ionicons name="search" size={16} color="#9ca3af" />
-                    <TextInput
-                        className="flex-1 py-3 text-gray-800 text-sm ml-2"
-                        placeholder="Search people, posts..."
-                        placeholderTextColor="#9ca3af"
-                        value={query}
-                        onChangeText={setQuery}
-                        autoCorrect={false}
-                    />
-                    {query.length > 0 && (
-                        <TouchableOpacity
-                            onPress={() => {
-                                setQuery("")
-                                setPeople([])
-                                setPosts([])
+                <View className="flex-row items-center gap-2">
+                    <View className="flex-1 flex-row items-center bg-gray-100 border border-gray-200 rounded-xl px-3">
+                        <Ionicons name="search" size={16} color="#9ca3af" />
+                        <TextInput
+                            className="flex-1 py-3 text-gray-800 text-sm ml-2"
+                            placeholder="Search people, posts..."
+                            placeholderTextColor="#9ca3af"
+                            value={query}
+                            onChangeText={(text) => {
+                                setQuery(text)
+                                if (!text.trim()) handleClear()
                             }}
-                            className="p-1"
-                        >
-                            <Ionicons name="close-circle" size={16} color="#9ca3af" />
-                        </TouchableOpacity>
-                    )}
+                            onSubmitEditing={handleSearch}
+                            returnKeyType="search"
+                            autoCorrect={false}
+                        />
+                        {query.length > 0 && (
+                            <TouchableOpacity onPress={handleClear} className="p-1">
+                                <Ionicons name="close-circle" size={16} color="#9ca3af" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        onPress={handleSearch}
+                        className="bg-blue-500 rounded-xl px-4 py-3"
+                    >
+                        <Text className="text-white font-semibold text-sm">Search</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -87,9 +88,9 @@ const SearchPage = () => {
                             <TouchableOpacity
                                 key={tab}
                                 onPress={() => setActiveTab(tab)}
-                                className={`mr-6 pb-3 border-b-2 ${activeTab === tab ? "border-indigo-500" : "border-transparent"}`}
+                                className={`mr-6 pb-3 border-b-2 ${activeTab === tab ? "border-blue-500" : "border-transparent"}`}
                             >
-                                <Text className={`text-sm font-medium capitalize ${activeTab === tab ? "text-indigo-500" : "text-gray-400"}`}>
+                                <Text className={`text-sm font-medium capitalize ${activeTab === tab ? "text-blue-500" : "text-gray-400"}`}>
                                     {tab}
                                 </Text>
                             </TouchableOpacity>
@@ -98,7 +99,7 @@ const SearchPage = () => {
 
                     {loading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#6366f1" />
+                            <ActivityIndicator size="large" color="#3b82f6" />
                         </View>
                     ) : activeTab === "people" ? (
                         <FlatList
@@ -111,7 +112,7 @@ const SearchPage = () => {
                                 <View className="items-center py-16">
                                     <Ionicons name="person-outline" size={32} color="#d1d5db" />
                                     <Text className="text-gray-400 text-sm mt-3">
-                                        No people found for "{query}"
+                                        No people found for "{submittedQuery}"
                                     </Text>
                                 </View>
                             }
@@ -122,12 +123,12 @@ const SearchPage = () => {
                             keyExtractor={(item) => `search-post-${item.id}`}
                             className="flex-1 w-full"
                             contentContainerStyle={{ flexGrow: 1 }}
-                            renderItem={({ item }) => <PostCard item={item} query={query} />}
+                            renderItem={({ item }) => <PostCard item={item} query={submittedQuery} />}
                             ListEmptyComponent={
                                 <View className="items-center py-16">
                                     <Ionicons name="document-text-outline" size={32} color="#d1d5db" />
                                     <Text className="text-gray-400 text-sm mt-3">
-                                        No posts found for "{query}"
+                                        No posts found for "{submittedQuery}"
                                     </Text>
                                 </View>
                             }
@@ -186,7 +187,7 @@ const SuggestedPeople = () => {
         <FlatList
             data={suggested}
             keyExtractor={(item) => `suggested-${item.id}`}
-            renderItem={({ item }) => <PersonCard key={`suggested-${item.id}`} item={item} />}
+            renderItem={({ item }) => <PersonCard item={item} />}
             scrollEnabled={false}
             refreshControl={
                 <RefreshControl

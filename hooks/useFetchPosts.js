@@ -10,7 +10,10 @@ const useFetchPosts = () => {
         setIsLoading(true);
         try {
             const res = await authApiClient.get(`/posts`);
-            setPosts(res.data)
+            const uniquePosts = res.data.filter(
+                (post, index, self) => index === self.findIndex(p => p.id === post.id)
+            )
+            setPosts(uniquePosts)
         } catch {
             console.log("something went wrong")
         } finally {
@@ -24,7 +27,7 @@ const useFetchPosts = () => {
         fetchPosts();
     }, [])
 
-    return { posts, isLoading, fetchPosts } 
+    return { posts, isLoading, fetchPosts }
 }
 
 export default useFetchPosts
