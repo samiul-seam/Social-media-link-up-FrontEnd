@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const authApiClient = axios.create({
-  baseURL: "https://social-media-link-up-backend-production.up.railway.app/api/",
+  baseURL: process.env.EXPO_PUBLIC_API_URL
 });
 
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import authApiClient from '../services/auth-api-client'
 import useAuthContext from './useAuthContext'
 
-const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
+const WS_BASE = process.env.EXPO_PUBLIC_WS_URL
 
 const useInbox = () => {
     const { authTokens } = useAuthContext()
@@ -14,7 +14,7 @@ const useInbox = () => {
     const fetchChatList = async (showLoading = true) => {
         if (showLoading) setLoading(true)
         try {
-            const res = await authApiClient.get('/inboxes/')
+            const res = await authApiClient.get('inboxes/')
             setChats(res.data)
             const total = res.data.filter(c => c.unread_count > 0).length
             setUnreadCount(total)

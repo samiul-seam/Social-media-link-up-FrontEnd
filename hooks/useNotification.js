@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import authApiClient from '../services/auth-api-client'
 import useAuthContext from './useAuthContext'
 
-const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
+const WS_BASE = process.env.EXPO_PUBLIC_WS_URL
 
 const useNotification = () => {
     const { authTokens } = useAuthContext()
@@ -15,7 +15,7 @@ const useNotification = () => {
     const fetchNotifications = async (showLoading = true) => {
         if (showLoading) setLoading(true)
         try {
-            const res = await authApiClient.get('/notification/')
+            const res = await authApiClient.get('notification/')
             setNotifications(res.data)
             const total = res.data.filter(n => !n.is_read).length
             setUnreadCount(total)

@@ -10,7 +10,9 @@ import defaultImg from '../assets/default_img.jpg'
 import useAuthContext from '../hooks/useAuthContext'
 import { useInboxContext } from '../context/InboxContext'
 import { StatusBar } from 'react-native'
-const WS_BASE = 'wss://social-media-link-up-backend-production.up.railway.app'
+
+
+const WS_BASE = process.env.EXPO_PUBLIC_WS_URL
 
 
 export default function ChatScreen() {

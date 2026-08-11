@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux'; // or however you store your token
 
-const BASE_WS_URL = 'wss://social-media-link-up-backend-production.up.railway.app';
+const BASE_WS_URL = process.env.EXPO_PUBLIC_WS_URL
 
 
 export const useChat = (inboxId) => {
